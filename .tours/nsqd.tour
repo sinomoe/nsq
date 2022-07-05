@@ -1,0 +1,114 @@
+{
+  "$schema": "https://aka.ms/codetour-schema",
+  "title": "1 - nsqd walkthrough",
+  "steps": [
+    {
+      "file": "apps/nsqd/main.go",
+      "description": "主要负责参数解析，包括配置文件解析和命令行参数解析",
+      "line": 33
+    },
+    {
+      "file": "apps/nsqd/main.go",
+      "description": "实现了 `go-svc/Service` 接口， `Init` 方法在 `Start` 前调用， 必须无阻塞，`Init` 调用成功后调用 `Start`\n\n```go\ntype Service interface {\n\t// Init is called before the program/service is started and after it's\n\t// determined if the program is running as a Windows Service. This method must\n\t// be non-blocking.\n\tInit(Environment) error\n\n\t// Start is called after Init. This method must be non-blocking.\n\tStart() error\n\n\t// Stop is called when Handle() returns ErrStop or when a\n\t// Windows Service is stopped.\n\tStop() error\n}\n```",
+      "line": 21
+    },
+    {
+      "file": "apps/nsqd/main.go",
+      "description": "利用这个库将 flag 解析到的参数和配置文件里读到的参数 join 起来",
+      "line": 56
+    },
+    {
+      "file": "apps/nsqd/main.go",
+      "description": "根据前面解析的各种参数创建 nsqd 实例（仅创建了实例）",
+      "line": 58
+    },
+    {
+      "file": "apps/nsqd/main.go",
+      "description": "Init 解析参数完成后，进入 Start 流程",
+      "line": 67
+    },
+    {
+      "file": "nsqd/nsqd.go",
+      "description": "使用原子赋值方法将 nsqd 状态标记为 loading，后续从元数据中恢复 topic/channel 时会判断此状态",
+      "line": 319
+    },
+    {
+      "file": "nsqd/nsqd.go",
+      "description": "从文件中加载 topic/channel 元数据，其形式如下\n\n```go\ntype meta struct {\n\tTopics []struct {\n\t\tName     string `json:\"name\"`\n\t\tPaused   bool   `json:\"paused\"`\n\t\tChannels []struct {\n\t\t\tName   string `json:\"name\"`\n\t\t\tPaused bool   `json:\"paused\"`\n\t\t} `json:\"channels\"`\n\t} `json:\"topics\"`\n}\n```",
+      "line": 332
+    },
+    {
+      "file": "nsqd/nsqd.go",
+      "description": "从元数据恢复 topic/channel",
+      "line": 338
+    },
+    {
+      "file": "apps/nsqd/main.go",
+      "description": "持久化元数据，其实是把刚刚读出来的又写入一次，可能是为了版本升级的时候元数据迁移？",
+      "line": 72
+    },
+    {
+      "file": "nsqd/nsqd.go",
+      "description": "老实说这里写的挺烂，为啥不复用前面的 meta 数据结构呢",
+      "line": 370
+    },
+    {
+      "file": "apps/nsqd/main.go",
+      "description": "nsqd 的主流程，这里起了一个协程单独处理",
+      "line": 78
+    },
+    {
+      "file": "nsqd/nsqd.go",
+      "description": "结合 exitFunc 从多个地方接收 err，用于启动成功判定",
+      "line": 242
+    },
+    {
+      "file": "nsqd/nsqd.go",
+      "description": "* 启动 tcp listener，用于创建 tcp 连接，tcp conn 的处理函数为 `n.tcpServer.Handle`\n* `n.tcpListener` 是在创建 nsqd 实例时创建的\n* 当 nsqd 退出时会 close 此 listener，此处 `exitFunc` 才会执行",
+      "line": 254,
+      "selection": {
+        "start": {
+          "line": 254,
+          "character": 48
+        },
+        "end": {
+          "line": 254,
+          "character": 57
+        }
+      }
+    },
+    {
+      "file": "nsqd/nsqd.go",
+      "description": "这里和下面的 http/https listener 同理\n\n* `n.httpListener` 是在创建 nsqd 实例时创建的\n* 当 nsqd 退出时会 close 此 listener，此处 `exitFunc` 才会执行",
+      "line": 257,
+      "selection": {
+        "start": {
+          "line": 256,
+          "character": 7
+        },
+        "end": {
+          "line": 256,
+          "character": 19
+        }
+      }
+    },
+    {
+      "file": "nsqd/nsqd.go",
+      "description": "n.waitGroup 一定会等待三个 goroutine 退出\n* TCPServer：从 tcp listener 创建 tcp 连接，并将每一个 tcp 连接包装为一个 client（客户端连接在服务端的包装），此外为每个 client 创建一个 message pump goroutine，用于向客户端发送消息\n* queueScanLoop：处理 inflight 和 deferred 的优先级队列。它管理一个 queueScanWorker 池并发处理 nsq channel。\n    * inflight 小根堆维护 inflifht msg 的超时控制，在 nsq 中，服务端推送消息后，消息的超时时间会被写入小根堆，当客户端消费完成后需要返回 FIN 指令以从小根堆中移除对应的 inflight msg，如果客户端未能及时返回 FIN，inflight 堆的堆顶会大于当前时间戳，即表现为消息消费超时，此时 nsqd 会将消息从 inflight 队列删除，并重新写回 message pump 等待客户端消费\n    * deferred 队列与 inflihgt 类似，维护了 REQ（requeue）消息的延迟投递，REQ 指令可以指定延迟时间（经过这段时间后才会被再次消费），这个时间即保存在 deferred 小根堆中，当堆定小于当前时间戳，即可认为该条消息已经可以再次推送至客户端，此时才会将消息从 deferred 队列中删除，并重新写回 message pump 等待消费\n* lookupLoop：topic/channel 发现\n    * 维护所有 peer 的 tcp 连接和心跳\n    * 当有新 topic/channel 创建时，向 peers 宣告\n    * 当 peer 配置发生变化时，更新本地 peer 连接",
+      "line": 269,
+      "selection": {
+        "start": {
+          "line": 254,
+          "character": 21
+        },
+        "end": {
+          "line": 254,
+          "character": 30
+        }
+      }
+    }
+  ],
+  "ref": "master",
+  "isPrimary": true,
+  "nextTour": "2 - tcpServer"
+}

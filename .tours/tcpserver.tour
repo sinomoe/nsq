@@ -1,0 +1,117 @@
+{
+  "$schema": "https://aka.ms/codetour-schema",
+  "title": "2 - tcpServer",
+  "steps": [
+    {
+      "file": "nsqd/nsqd.go",
+      "description": "TCPServer 是 nsqd 用来处理客户端连接的 goroutine，n.tcpServer 是连接的处理函数",
+      "line": 254,
+      "selection": {
+        "start": {
+          "line": 254,
+          "character": 46
+        },
+        "end": {
+          "line": 254,
+          "character": 57
+        }
+      }
+    },
+    {
+      "file": "nsqd/nsqd.go",
+      "description": "n.tcpServer 在创建 nsqd 实例时被初始化，并引用了 nsqd 实例",
+      "line": 141
+    },
+    {
+      "file": "internal/protocol/tcp_server.go",
+      "description": "在 TCPServer goroutine 中循环创建客户端连接",
+      "line": 23,
+      "selection": {
+        "start": {
+          "line": 17,
+          "character": 6
+        },
+        "end": {
+          "line": 17,
+          "character": 15
+        }
+      }
+    },
+    {
+      "file": "internal/protocol/tcp_server.go",
+      "description": "为每个客户端连接起 goroutine 进行处理，这里的 handler 是一个接口，对应的是 n.tcpServer 参数，n.tcpServer 实现了 Handle 方法，即此处处理 tcp 连接的逻辑",
+      "line": 39
+    },
+    {
+      "file": "internal/protocol/tcp_server.go",
+      "description": "TCPServer 会等待所有连接关闭后再退出（优雅关闭）",
+      "line": 45,
+      "selection": {
+        "start": {
+          "line": 17,
+          "character": 6
+        },
+        "end": {
+          "line": 17,
+          "character": 15
+        }
+      }
+    },
+    {
+      "file": "nsqd/tcp.go",
+      "description": "客户端 tcp 连接的主要处理逻辑在此",
+      "line": 26
+    },
+    {
+      "file": "nsqd/tcp.go",
+      "description": "解析协议版本，协议版本携带在客户端创建 tcp 连接的头四个字；解析成功后创建 proto 结构体",
+      "line": 46
+    },
+    {
+      "file": "nsqd/tcp.go",
+      "description": "包装客户端连接；使用 remote addr 作为 key 保存连接",
+      "line": 56
+    },
+    {
+      "file": "nsqd/tcp.go",
+      "description": "IOLoop 负责与客户端连接进行交互",
+      "line": 59
+    },
+    {
+      "file": "nsqd/protocol_v2.go",
+      "description": "进入 IOLoop 首先为每个连接创建一个 messagePump goroutine，用于处理 channel 消息推送；IOLoop 本身的循环体则负责客户端指令的解析、执行以及响应",
+      "line": 54,
+      "selection": {
+        "start": {
+          "line": 54,
+          "character": 7
+        },
+        "end": {
+          "line": 54,
+          "character": 18
+        }
+      }
+    },
+    {
+      "file": "nsqd/protocol_v2.go",
+      "description": "等待 messagePump 初始化完毕后才进入 IOLoop 的循环体",
+      "line": 55
+    },
+    {
+      "file": "nsqd/protocol_v2.go",
+      "description": "IOLoop 解析客户端发送的指令",
+      "line": 82
+    },
+    {
+      "file": "nsqd/protocol_v2.go",
+      "description": "IOLoop 执行客户端指令",
+      "line": 87
+    },
+    {
+      "file": "nsqd/protocol_v2.go",
+      "description": "IOLoop 在执行完客户端发送的指令后，向客户端返回响应",
+      "line": 108
+    }
+  ],
+  "ref": "master"
+}

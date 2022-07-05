@@ -251,7 +251,7 @@ func (n *NSQD) Main() error {
 	}
 
 	n.waitGroup.Wrap(func() {
-		exitFunc(protocol.TCPServer(n.tcpListener, n.tcpServer, n.logf))
+		exitFunc(protocol.TCPServer(n.tcpListener,n.tcpServer , n.logf))
 	})
 	if n.httpListener != nil {
 		httpServer := newHTTPServer(n, false, n.getOpts().TLSRequired == TLSRequired)
