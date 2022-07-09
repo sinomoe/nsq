@@ -1,0 +1,122 @@
+{
+  "$schema": "https://aka.ms/codetour-schema",
+  "title": "3 - messagePump",
+  "steps": [
+    {
+      "file": "nsqd/protocol_v2.go",
+      "description": "messagePump 在 IOLoop 中以协程的形式启动，主要负责消息投递",
+      "line": 54,
+      "selection": {
+        "start": {
+          "line": 54,
+          "character": 7
+        },
+        "end": {
+          "line": 54,
+          "character": 18
+        }
+      }
+    },
+    {
+      "file": "nsqd/protocol_v2.go",
+      "description": "从内存中获取 msg 的 队列",
+      "line": 207
+    },
+    {
+      "file": "nsqd/protocol_v2.go",
+      "description": "从文件中获取 msg 的队列",
+      "line": 208
+    },
+    {
+      "file": "nsqd/protocol_v2.go",
+      "description": "订阅 topic 的 channel，一个客户端 tcp 连接只能订阅一个 topic，订阅之后将不可再次订阅",
+      "line": 209
+    },
+    {
+      "file": "nsqd/protocol_v2.go",
+      "description": "用来定期 flush buffer 中的消息到 client",
+      "line": 213
+    },
+    {
+      "file": "nsqd/protocol_v2.go",
+      "description": "通知父协程，message pump 已启动",
+      "line": 233
+    },
+    {
+      "file": "nsqd/protocol_v2.go",
+      "description": "如果还未订阅 topic/channel，或 client 未 ready（inflight 的消息数量大于等于 RDY n 指定的数量，或 channel 被 pause），此时：\n* 不处理何内存里的 msg\n* 不处理任何文件里的 msg\n* 将 buffer 里的数据 flush 到 client，同时标记 flush flag，用于下个循环判断\n",
+      "line": 236
+    },
+    {
+      "file": "nsqd/protocol_v2.go",
+      "description": "我悟到了，这里强制 flush buffer 可以防止下面的 case：\n客户端消费途中使用 RDY n 将，ready count 突然改小，导致 ready count <= inflight，这种情况下直接把已经 buffer 的 msg（inflight）全部 flush 到 client",
+      "line": 242
+    },
+    {
+      "file": "nsqd/protocol_v2.go",
+      "description": "若 client 连接已订阅 channel，且 client 已 ready（inflight 的消息数量小于 RDY n 指定的数量，且 channel 未被 pause），且上次循环已经 flush 过 buffer，则：\n* 此轮循环不再 flush buffer 到 client，所有要写到 client 的数据暂时写到 buffer 中\n* 允许处理内存里的 msg\n* 允许处理文件里的 msg",
+      "line": 249
+    },
+    {
+      "file": "nsqd/protocol_v2.go",
+      "description": "若 client 连接已订阅 channel，且 client 已 ready（inflight 的消息数量小于 RDY n 指定的数量，且 channel 未被 pause），且上次循环未 flush 过 buffer（即所有 msg 还在 buffer 中，未推送至 client），则：\n* 开启 buffer flush 定时器，一定时间后将 buffer 内的所有数据 flush 到 client\n* 允许处理内存里的 msg\n* 允许处理文件里的 msg",
+      "line": 255
+    },
+    {
+      "file": "nsqd/protocol_v2.go",
+      "description": "flush buffer 中的 msg 到 client，flush 完成后标记 flush flag",
+      "line": 264
+    },
+    {
+      "file": "nsqd/protocol_v2.go",
+      "description": "客户端通过 RDY n 修改 ready count 之后，（如果可以的话）直接进入下一次循环",
+      "line": 275
+    },
+    {
+      "file": "nsqd/protocol_v2.go",
+      "description": "用于订阅 channel，订阅完成后将 subEventChan 置为 nil，这个分支将永远阻塞，也就达到了只允许 SUB 一次的目的",
+      "line": 276,
+      "selection": {
+        "start": {
+          "line": 276,
+          "character": 23
+        },
+        "end": {
+          "line": 276,
+          "character": 35
+        }
+      }
+    },
+    {
+      "file": "nsqd/protocol_v2.go",
+      "description": "用于接收 IDENTIFY 指令，用于更新 client 元数据，以及 client 功能协商，每个 client 连接只能 IDENTIFY 一次，可以用于：\n\n* 更新 flush ticker\n* 更新 heartbeat ticker\n* 更新 msg 超时（inflight 超时）时间\n* 更新采样率，（采样率为 x 时，将 x% 的消息发送至该客户端连接，根据概率实现，非严格 x%）\n\nIDENTIFY 还有很多用处，这里列出的仅仅是 message pump 关心的变化信息（因为会影响 message pump 的行为）",
+      "line": 279
+    },
+    {
+      "file": "nsqd/protocol_v2.go",
+      "description": "心跳定时器，当发送心跳时直接 flush buffer",
+      "line": 300
+    },
+    {
+      "file": "nsqd/protocol_v2.go",
+      "description": "backendMsgChan 是指非内存形式的，msg 后备存储，在本质上是一个接口，但是在 nsq 的典型实现中，这里代指从文件中读取 msg （因为 nsq 可以配置内存 bound，超出 bound 即被写入文件中）",
+      "line": 305,
+      "selection": {
+        "start": {
+          "line": 305,
+          "character": 15
+        },
+        "end": {
+          "line": 305,
+          "character": 29
+        }
+      }
+    },
+    {
+      "file": "nsqd/protocol_v2.go",
+      "description": "消费内存中的 msg",
+      "line": 324
+    }
+  ],
+  "ref": "master"
+}
