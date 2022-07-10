@@ -1,0 +1,62 @@
+{
+  "$schema": "https://aka.ms/codetour-schema",
+  "title": "5 - lookupLoop",
+  "steps": [
+    {
+      "file": "nsqd/lookup.go",
+      "description": "lookup loop 主要负责与 nsqlookop 的交互",
+      "line": 78
+    },
+    {
+      "file": "nsqd/lookup.go",
+      "description": "根据配置文件中的定义，创建所有 nsqlookup 在 nsqd 中对应的实体 lookupd（此时仅实例化，并未创建连接）",
+      "line": 98
+    },
+    {
+      "file": "nsqd/lookup.go",
+      "description": "connectCallback 指定了初次连接 nsqlookup 时的回调逻辑，主要包括：\n* 上报 nsqd 实例信息\n* 在 nsqlookup 上创建于本地 topic/channel 对应的信息",
+      "line": 99
+    },
+    {
+      "file": "nsqd/lookup.go",
+      "description": "执行 nsqlookup 上的 Identify 指令，上报 nsqd 的实例信息",
+      "line": 24,
+      "selection": {
+        "start": {
+          "line": 24,
+          "character": 19
+        },
+        "end": {
+          "line": 24,
+          "character": 27
+        }
+      }
+    },
+    {
+      "file": "nsqd/lookup.go",
+      "description": "读取 nsqd 实例中的所有 topic/channel 信息，在 nsqlookup 上创建相应的信息",
+      "line": 54
+    },
+    {
+      "file": "nsqd/lookup.go",
+      "description": "定期与所有 nsqlookup peer 心跳连接",
+      "line": 109
+    },
+    {
+      "file": "nsqd/lookup.go",
+      "description": "在创建/删除 topic/channel 时会接收到此通知，此分支将此消息再通知给所有的 nsqlookup peers",
+      "line": 119
+    },
+    {
+      "file": "nsqd/lookup.go",
+      "description": "只有通过 http 修改配置参数时才会触发此分支，如果 nsqlookup peers 参数有修改，在下次循环时将会与新加入的 nsqlookup peer 建立连接",
+      "line": 151
+    },
+    {
+      "file": "nsqd/lookup.go",
+      "description": "最后关闭无效的 nsqlookup peers 连接",
+      "line": 161
+    }
+  ],
+  "ref": "master"
+}
