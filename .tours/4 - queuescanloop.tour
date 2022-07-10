@@ -1,0 +1,162 @@
+{
+  "$schema": "https://aka.ms/codetour-schema",
+  "title": "4 - queueScanLoop",
+  "steps": [
+    {
+      "file": "nsqd/nsqd.go",
+      "description": "queueScanLoop 以一个全局 goroutine 的形式存在，主要负责管理本 nsqd 上所有 channel 的 inflight（控制 inflight msg 超时） 和 deferred（控制 REQ 消息再次投递） 优先队列。找出已经超时的队列元素，从 inflight/deferred 优先队列删除，并执行相关逻辑（将 inflight/deferred msg 交由 msg pump 发送）\n\nqueueScanLoop 管理了多个 worker 同时处理上述队列，每个 worker 对应一个 channel，worker 的数量会随着 channel 的数量变化定期（每隔 QueueScanRefreshInterval）动态伸缩（还取决于 QueueScanWorkerPoolMax 配置的 worker 上限）\n\n为了保证优先队列管理的高效性（闲时定期扫描所有 channel 的优先队列，忙时跳过等待时间，快速处理有 channel 的优先队列），nsqd 借鉴了 redis 的随机过期算法，算法细节如下：\n* 每隔 QueueScanInterval（默认 100ms），从全量 channel cache（每隔 QueueScanRefreshInterval 重新刷新全量数据）中随机选择 QueueScanSelectionCount（默认 20）个 channel\n* 上述选中的 channel 中如果其 inflight/deferred 优先队列中的任一的队首时间戳小于当前时间戳，则判定该 channel 为 dirty（可以理解为是需要进行处理）\n* 当上述选中的 channel 中超过 QueueScanDirtyPercent（默认 25%）的 channel 为 dirty，则跳过时间等待直接开始下一轮扫描；反之则等待 workTicker 后再进行下一次超时更新",
+      "line": 652,
+      "selection": {
+        "start": {
+          "line": 665,
+          "character": 10
+        },
+        "end": {
+          "line": 665,
+          "character": 20
+        }
+      }
+    },
+    {
+      "file": "nsqd/nsqd.go",
+      "description": "缓存全量 channel ",
+      "line": 660
+    },
+    {
+      "file": "nsqd/nsqd.go",
+      "description": "初始化 workers，woker 的处理逻辑也封装在其中",
+      "line": 661
+    },
+    {
+      "file": "nsqd/nsqd.go",
+      "description": "每隔 workTicker 计算过期的 inflight/deferred 队列元素",
+      "line": 665,
+      "selection": {
+        "start": {
+          "line": 665,
+          "character": 10
+        },
+        "end": {
+          "line": 665,
+          "character": 20
+        }
+      }
+    },
+    {
+      "file": "nsqd/nsqd.go",
+      "description": "每隔 refreshTicker 刷新全局 channel 缓存，并尝试调整 workers 数量，workers 数量为 QueueScanWorkerPoolMax 和 len(channel)/4 中的最小者",
+      "line": 669,
+      "selection": {
+        "start": {
+          "line": 641,
+          "character": 4
+        },
+        "end": {
+          "line": 641,
+          "character": 26
+        }
+      }
+    },
+    {
+      "file": "nsqd/nsqd.go",
+      "description": "随机从缓存的全量 channel 中取 QueueScanSelectionCount 个 channel，并交给 workers 处理",
+      "line": 683,
+      "selection": {
+        "start": {
+          "line": 677,
+          "character": 22
+        },
+        "end": {
+          "line": 677,
+          "character": 45
+        }
+      }
+    },
+    {
+      "file": "nsqd/nsqd.go",
+      "description": "若 dirty 率大于 QueueScanDirtyPercent 则直接进行下一次处理循环，跳过 workTicker 等待时间",
+      "line": 694,
+      "selection": {
+        "start": {
+          "line": 665,
+          "character": 10
+        },
+        "end": {
+          "line": 665,
+          "character": 20
+        }
+      }
+    },
+    {
+      "file": "nsqd/nsqd.go",
+      "description": "nsq 期望 pool 的理想大小为 channel 数量的 25%，同时 pool 的最大大小受配置 QueueScanWorkerPoolMax 限制",
+      "line": 594,
+      "selection": {
+        "start": {
+          "line": 592,
+          "character": 34
+        },
+        "end": {
+          "line": 592,
+          "character": 56
+        }
+      }
+    },
+    {
+      "file": "nsqd/nsqd.go",
+      "description": "当计算当前 pool 大小需要扩容时，增加新的 worker",
+      "line": 611
+    },
+    {
+      "file": "nsqd/nsqd.go",
+      "description": "这里时优先队列的具体处理逻辑。当从 workCh 接收到随机挑选的 channel 后，开始处理其 inflight/deferred 优先队列，如果堆顶元素小于当前时间戳则说明需要对堆顶元素进行处理，此时标记 channel 为 ditry",
+      "line": 626,
+      "selection": {
+        "start": {
+          "line": 623,
+          "character": 15
+        },
+        "end": {
+          "line": 623,
+          "character": 21
+        }
+      }
+    },
+    {
+      "file": "nsqd/channel.go",
+      "description": "inflight pq 和 deferred pq 的处理逻辑极其类似，仅分析 inflight pq 的处理逻辑",
+      "line": 581
+    },
+    {
+      "file": "nsqd/channel.go",
+      "description": "将堆顶元素的时间戳与当前时间戳 t 进行比较，如果堆顶元素小于 t 则将 msg 取出，并更新堆",
+      "line": 592,
+      "selection": {
+        "start": {
+          "line": 592,
+          "character": 35
+        },
+        "end": {
+          "line": 592,
+          "character": 41
+        }
+      }
+    },
+    {
+      "file": "nsqd/channel.go",
+      "description": "取出该条 msg 对应的 client",
+      "line": 606
+    },
+    {
+      "file": "nsqd/channel.go",
+      "description": "将 client 的 inflight count 原子间去 1，并尝试通知其 message pump 尝试进入下一次循环",
+      "line": 609
+    },
+    {
+      "file": "nsqd/channel.go",
+      "description": "最后将 msg 重新写回内存或文件，等待 message pump 下一次进行消费，至此完成了一条 inflight 消息的重试逻辑；值得注意的是 inflight pq 实现的 msg 超时重试不保证在同一个客户端连接上进行重试发送，重试发送时可能会发送给其他订阅了此 channel 的客户端",
+      "line": 611
+    }
+  ],
+  "ref": "master"
+}
