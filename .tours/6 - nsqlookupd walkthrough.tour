@@ -1,0 +1,77 @@
+{
+  "$schema": "https://aka.ms/codetour-schema",
+  "title": "6 - nsqlookupd walkthrough",
+  "steps": [
+    {
+      "file": "apps/nsqlookupd/main.go",
+      "description": "合并解析命令行和配置文件读取到的参数",
+      "line": 81
+    },
+    {
+      "file": "apps/nsqlookupd/main.go",
+      "description": "初始化 lookupd 实例",
+      "line": 82
+    },
+    {
+      "file": "nsqlookupd/nsqlookupd.go",
+      "description": "初始化 tcpServer，这里的 tcpServer 包含了连接的处理逻辑 Handle",
+      "line": 39
+    },
+    {
+      "file": "nsqlookupd/nsqlookupd.go",
+      "description": "初始化 tcp listener",
+      "line": 40
+    },
+    {
+      "file": "nsqlookupd/nsqlookupd.go",
+      "description": "初始化 http listener",
+      "line": 44
+    },
+    {
+      "file": "apps/nsqlookupd/main.go",
+      "description": "进入协程处理 lookupd 主逻辑",
+      "line": 89
+    },
+    {
+      "file": "nsqlookupd/nsqlookupd.go",
+      "description": "与 nsqd 的处理逻辑类似，这里从 tcp listener 里创建客户端连接 conn，并交由 tcpServer 处理，tcpServer 的 Handle 方法为 conn 的实际处理逻辑",
+      "line": 67
+    },
+    {
+      "file": "nsqlookupd/tcp.go",
+      "description": "当一个 conn 创建后，首先读取其前 4 个字节，用于校验协议版本",
+      "line": 23
+    },
+    {
+      "file": "nsqlookupd/tcp.go",
+      "description": "校验成功后创建 protocol 实体，用于后续处理指令",
+      "line": 37
+    },
+    {
+      "file": "nsqlookupd/tcp.go",
+      "description": "将客户端连接包装为 client，并保存连接",
+      "line": 46
+    },
+    {
+      "file": "nsqlookupd/tcp.go",
+      "description": "进入 lookup 的 IOLoop，和 nsqd 类似，IOLoop 主要用于从 conn 中读取/解析指令里；与 nsqd 不同的是，lookupd 不需要向客户端推送 msg，故无 msg pump 的逻辑",
+      "line": 49,
+      "selection": {
+        "start": {
+          "line": 49,
+          "character": 13
+        },
+        "end": {
+          "line": 49,
+          "character": 19
+        }
+      }
+    },
+    {
+      "file": "nsqlookupd/lookup_protocol_v1.go",
+      "description": "不断从 client 连接中读取指令，并尝试执行，lookupd 支持的指令有：\n* PING\n* IDENTIFY\n* REGISTER\n* UNREGISTER",
+      "line": 45
+    }
+  ],
+  "ref": "master"
+}
